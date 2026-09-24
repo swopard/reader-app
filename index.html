@@ -4,34 +4,42 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Voice Reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
+
   <div class="app">
+    <div class="gradient-bar" aria-hidden="true"></div>
+
     <header>
-      <h1>🔊 Voice Reader</h1>
-      <p class="subtitle">Paste an article and listen to it read aloud.</p>
+      <p class="kicker">Voice Synthesis Utility</p>
+      <h1>Voice Reader<span class="tm">&trade;</span></h1>
+      <p class="spec">Offline &middot; Browser&#8209;Native &middot; No Upload</p>
     </header>
 
     <main>
       <section class="input-section">
         <div class="toolbar">
           <label class="file-btn">
-            📄 Load .txt file
+            [ Load .txt ]
             <input type="file" id="fileInput" accept=".txt,text/plain" hidden />
           </label>
-          <button id="pasteBtn" type="button">📋 Paste from clipboard</button>
-          <button id="clearBtn" type="button" class="danger">🗑 Clear</button>
+          <button id="pasteBtn" type="button">[ Paste ]</button>
+          <button id="clearBtn" type="button" class="danger">[ Clear ]</button>
           <span class="word-count" id="wordCount">0 words</span>
         </div>
-        <div id="textDisplay" class="text-display" contenteditable="true" data-placeholder="Paste or type your article text here..."></div>
+        <div id="textDisplay" class="text-display" contenteditable="true" data-placeholder="Paste or type your article text here…"></div>
       </section>
 
       <section class="controls">
         <div class="transport">
-          <button id="playBtn" class="primary" type="button" disabled>▶ Play</button>
-          <button id="pauseBtn" type="button" disabled>⏸ Pause</button>
-          <button id="stopBtn" type="button" disabled>⏹ Stop</button>
+          <button id="playBtn" class="primary" type="button" disabled>&#9654; Play</button>
+          <button id="pauseBtn" type="button" disabled>&#10073;&#10073; Pause</button>
+          <button id="stopBtn" type="button" disabled>&#9632; Stop</button>
         </div>
 
         <div class="settings">
@@ -41,17 +49,17 @@
           </div>
 
           <div class="setting">
-            <label for="rateRange">Speed: <span id="rateValue">1.0x</span></label>
+            <label for="rateRange">Speed <span id="rateValue">1.0x</span></label>
             <input type="range" id="rateRange" min="0.5" max="2" step="0.1" value="1" />
           </div>
 
           <div class="setting">
-            <label for="pitchRange">Pitch: <span id="pitchValue">1.0</span></label>
+            <label for="pitchRange">Pitch <span id="pitchValue">1.0</span></label>
             <input type="range" id="pitchRange" min="0" max="2" step="0.1" value="1" />
           </div>
 
           <div class="setting">
-            <label for="volumeRange">Volume: <span id="volumeValue">100%</span></label>
+            <label for="volumeRange">Volume <span id="volumeValue">100%</span></label>
             <input type="range" id="volumeRange" min="0" max="1" step="0.05" value="1" />
           </div>
         </div>
@@ -61,7 +69,7 @@
     </main>
 
     <footer>
-      <p>Works fully offline in your browser using the Web Speech API. No text is uploaded anywhere.</p>
+      <p class="spec">Runs locally via the Web Speech API &mdash; nothing is sent anywhere</p>
     </footer>
   </div>
 
