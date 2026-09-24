@@ -80,25 +80,36 @@
   // ---------- Voices ----------
 
   function populateVoices() {
-    voices = synth.getVoices();
-    if (!voices.length) return;
+    const newVoices = synth.getVoices();
+    if (!newVoices.length) return;
 
-    const savedVoiceURI = localStorage.getItem(STORAGE_KEYS.voice);
+    // Preserve whatever is currently selected (it may not be saved to
+    // storage yet) so a repeat "voiceschanged" firing doesn't reset the
+    // user's pick back to the default voice mid-session.
+    const currentlySelected = voiceSelect.selectedOptions[0];
+    const preferredURI =
+      (currentlySelected && currentlySelected.dataset.uri) || localStorage.getItem(STORAGE_KEYS.voice);
+
+    voices = newVoices;
     voiceSelect.innerHTML = "";
     voices.forEach((voice, i) => {
       const option = document.createElement("option");
-      option.value = voice.voiceURI;
+      // Some browsers reuse/duplicate voiceURI values across voices, so the
+      // option's value is the voice's index in `voices` (always unique) —
+      // the voiceURI is kept separately for persisting the choice across
+      // reloads.
+      option.value = String(i);
+      option.dataset.uri = voice.voiceURI;
       option.textContent = `${voice.name} (${voice.lang})${voice.default ? " — default" : ""}`;
       voiceSelect.appendChild(option);
     });
 
-    if (savedVoiceURI && voices.some((v) => v.voiceURI === savedVoiceURI)) {
-      voiceSelect.value = savedVoiceURI;
-    } else {
-      const englishDefault = voices.find((v) => v.default) || voices.find((v) => v.lang.startsWith("en")) || voices[0];
-      voiceSelect.value = englishDefault.voiceURI;
-    }
+    let indexToSelect = preferredURI ? voices.findIndex((v) => v.voiceURI === preferredURI) : -1;
+    if (indexToSelect === -1) indexToSelect = voices.findIndex((v) => v.default);
+    if (indexToSelect === -1) indexToSelect = voices.findIndex((v) => v.lang.startsWith("en"));
+    if (indexToSelect === -1) indexToSelect = 0;
 
+    voiceSelect.value = String(indexToSelect);
     playBtn.disabled = false;
   }
 
@@ -110,7 +121,8 @@
   }
 
   function getSelectedVoice() {
-    return voices.find((v) => v.voiceURI === voiceSelect.value) || null;
+    const index = Number(voiceSelect.value);
+    return Number.isInteger(index) ? voices[index] || null : null;
   }
 
   // ---------- Text chunking & highlighting ----------
@@ -217,7 +229,12 @@
 
     chunks.forEach((chunk, i) => {
       const utterance = new SpeechSynthesisUtterance(chunk.text);
-      if (voice) utterance.voice = voice;
+      if (voice) {
+        utterance.voice = voice;
+        // Some browsers (notably Safari/iOS) fall back to a default voice
+        // if `lang` doesn't match the chosen voice's language.
+        utterance.lang = voice.lang;
+      }
       utterance.rate = rate;
       utterance.pitch = pitch;
       utterance.volume = volume;
@@ -301,7 +318,8 @@
   });
 
   voiceSelect.addEventListener("change", () => {
-    localStorage.setItem(STORAGE_KEYS.voice, voiceSelect.value);
+    const voice = getSelectedVoice();
+    if (voice) localStorage.setItem(STORAGE_KEYS.voice, voice.voiceURI);
   });
 
   function restoreSettings() {
