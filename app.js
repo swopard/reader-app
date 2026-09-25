@@ -36,6 +36,8 @@
   let spanPointer = 0;
   let activeUtterances = [];
   let isPlaying = false;
+  let isPaused = false;
+  let pauseOffset = 0;
 
   function setStatus(text) {
     statusEl.textContent = text;
@@ -202,6 +204,8 @@
 
   function resetPlaybackUI() {
     isPlaying = false;
+    isPaused = false;
+    pauseOffset = 0;
     playBtn.disabled = false;
     playBtn.textContent = "▶ Play";
     pauseBtn.disabled = true;
@@ -210,16 +214,32 @@
     textDisplay.setAttribute("contenteditable", "true");
   }
 
-  function startPlayback() {
-    const text = getPlainText().trim();
+  // fromOffset resumes playback from a character offset into the full text
+  // (used after Pause) instead of starting over from the beginning. Native
+  // speechSynthesis.pause()/resume() is unreliable across browsers (it can
+  // silently no-op or fail to resume), so pausing fully cancels playback and
+  // remembers where to pick back up instead.
+  function startPlayback(fromOffset = 0) {
+    const fullText = getPlainText();
+    const text = fullText.trim();
     if (!text) {
       setStatus("Paste some text first.");
       return;
     }
 
     synth.cancel();
-    buildWordSpans(getPlainText());
-    chunks = chunkText(getPlainText());
+
+    if (fromOffset > 0) {
+      spanPointer = spans.findIndex((s) => s.start >= fromOffset);
+      if (spanPointer === -1) spanPointer = Math.max(spans.length - 1, 0);
+    } else {
+      buildWordSpans(fullText);
+    }
+
+    chunks = chunkText(fullText.slice(fromOffset)).map((c) => ({
+      text: c.text,
+      startOffset: c.startOffset + fromOffset,
+    }));
     activeUtterances = [];
 
     const voice = getSelectedVoice();
@@ -275,11 +295,11 @@
   }
 
   playBtn.addEventListener("click", () => {
-    if (synth.paused) {
-      synth.resume();
-      playBtn.disabled = true;
-      pauseBtn.disabled = false;
-      setStatus("Reading…");
+    if (isPaused) {
+      const resumeFrom = pauseOffset;
+      isPaused = false;
+      pauseOffset = 0;
+      startPlayback(resumeFrom);
       return;
     }
     startPlayback();
@@ -287,8 +307,13 @@
 
   pauseBtn.addEventListener("click", () => {
     if (!isPlaying) return;
-    synth.pause();
+    // Remember the word currently being read so Play can resume from here.
+    pauseOffset = spans[spanPointer] ? spans[spanPointer].start : 0;
+    synth.cancel();
+    isPlaying = false;
+    isPaused = true;
     playBtn.disabled = false;
+    playBtn.textContent = "▶ Resume";
     pauseBtn.disabled = true;
     setStatus("Paused.");
   });
